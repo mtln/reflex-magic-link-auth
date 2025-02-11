@@ -14,7 +14,7 @@ class State(rx.State):
     login_error: str = ""
 
     @rx.var(cache=True)
-    def is_prod_mode(self):
+    def is_prod_mode(self) -> bool:
         return is_prod_mode()
 
     @rx.event
