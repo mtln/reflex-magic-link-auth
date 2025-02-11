@@ -11,6 +11,7 @@ class HandleMagicLinkState(MagicLinkAuthState):
 
     token_valid: bool = False
 
+    @rx.event
     def on_load(self):
         params = self.router.page.params
         email = params.get("email")

@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import datetime
 import secrets
-import urllib
-
-from sqlmodel import delete, func, select, update, Session
+import urllib.parse
 
 import reflex as rx
+from sqlmodel import Session, desc, func, select
 
 from . import constants
 from .models import MagicLinkAuthRecord, MagicLinkAuthSession
@@ -19,17 +18,21 @@ class MagicLinkBaseState(rx.State):
 
     auth_url: str
 
+    @rx.event
     def get_base_url(self):
         """EventHandler triggers a request for the frontend URL."""
         return rx.call_script(
             "window.location.origin", callback=type(self).get_auth_url_cb
         )
 
-    def get_auth_url_cb(self, base_url):
+    @rx.event
+    def get_auth_url_cb(self, base_url: str):
         """Callback that accepts and stores the frontend URL for validating OTP."""
         self.auth_url = urllib.parse.urljoin(base_url, constants.AUTH_ROUTE)
 
-    def _get_magic_link(self, record: MagicLinkAuthRecord, otp: str, redir: str = "/"):
+    def _get_magic_link(
+        self, record: MagicLinkAuthRecord, otp: str, redir: str = "/"
+    ) -> str:
         """Helper function to format the magic link URL."""
         url_parts = urllib.parse.urlparse(self.auth_url)
         return urllib.parse.urlunparse(
@@ -47,7 +50,9 @@ class MagicLinkAuthState(MagicLinkBaseState):
     session_token: str = rx.LocalStorage(sync=True)
 
     def _get_current_record(
-        self, session: Session, email: str
+        self,
+        session: Session,
+        email: str,
     ) -> MagicLinkAuthRecord | None:
         return session.exec(
             MagicLinkAuthRecord.select()
@@ -55,34 +60,40 @@ class MagicLinkAuthState(MagicLinkBaseState):
                 MagicLinkAuthRecord.email == email.lower(),
                 MagicLinkAuthRecord.expiration >= func.now(),
             )
-            .order_by(MagicLinkAuthRecord.created.desc())
+            .order_by(desc(MagicLinkAuthRecord.created))
             .limit(1),
         ).one_or_none()
 
     def _expire_outstanding_otps(self, session: Session, email: str):
         # Kill unexpired OTPs for this email (only one active at a time).
-        session.exec(
-            update(MagicLinkAuthRecord)
-            .where(
+        for record in session.exec(
+            MagicLinkAuthRecord.select().where(
                 MagicLinkAuthRecord.email == email.lower(),
                 MagicLinkAuthRecord.expiration >= func.now(),
             )
-            .values(
-                expiration=datetime.datetime.now(datetime.timezone.utc),
-            ),
-        )
+        ).all():
+            record.expiration = datetime.datetime.now(datetime.timezone.utc)
+        session.commit()
 
     def _delete_all_otps(self, session: Session, email: str):
-        session.exec(
-            delete(MagicLinkAuthRecord).where(
+        for record in session.exec(
+            MagicLinkAuthRecord.select().where(
                 MagicLinkAuthRecord.email == email.lower()
             )
-        )
+        ).all():
+            session.delete(record)
+        session.commit()
 
     def _get_client_ip(self) -> str:
-        return getattr(self.router.headers, "x_forwarded_for", self.router.session.client_ip)
+        return getattr(
+            self.router.headers, "x_forwarded_for", self.router.session.client_ip
+        )
 
-    def _count_attempts_from_ip(self, session: Session, delta: datetime.timedelta) -> int:
+    def _count_attempts_from_ip(
+        self,
+        session: Session,
+        delta: datetime.timedelta,
+    ) -> int:
         count = session.exec(
             select(func.count()).where(
                 MagicLinkAuthRecord.client_ip == self._get_client_ip(),
@@ -121,9 +132,14 @@ class MagicLinkAuthState(MagicLinkBaseState):
             record = MagicLinkAuthRecord(  # type: ignore
                 email=email.lower(),
                 otp_hash=MagicLinkAuthRecord.hash_token(otp),
-                expiration=datetime.datetime.now(datetime.timezone.utc)
-                + expiration_delta,
-                client_ip=getattr(self.router.headers, "x_forwarded_for", self.router.session.client_ip),
+                expiration=(
+                    datetime.datetime.now(datetime.timezone.utc) + expiration_delta
+                ),
+                client_ip=getattr(
+                    self.router.headers,
+                    "x_forwarded_for",
+                    self.router.session.client_ip,
+                ),
                 recent_attempts=recent_attempts + 1,
             )
             session.add(record)
@@ -168,7 +184,7 @@ class MagicLinkAuthState(MagicLinkBaseState):
                     )
                 return auth_session_row
 
-    @rx.var
+    @rx.var(cache=False)
     def session_is_valid(self) -> bool:
         return (
             self.auth_session is not None
@@ -176,16 +192,14 @@ class MagicLinkAuthState(MagicLinkBaseState):
             >= datetime.datetime.now(datetime.timezone.utc)
         )
 
+    @rx.event
     def logout(self):
         with rx.session() as session:
-            session.exec(
-                update(MagicLinkAuthSession)
-                .where(
+            for auth_session in session.exec(
+                MagicLinkAuthSession.select().where(
                     MagicLinkAuthSession.session_token == self.session_token,
                 )
-                .values(
-                    expiration=datetime.datetime.now(datetime.timezone.utc),
-                ),
-            )
+            ).all():
+                auth_session.expiration = datetime.datetime.now(datetime.timezone.utc)
             session.commit()
         self.session_token = ""
