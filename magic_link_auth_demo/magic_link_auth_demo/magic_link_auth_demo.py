@@ -8,7 +8,9 @@ from reflex_magic_link_auth import MagicLinkAuthState, send_magic_link_mailgun
 # These are test keys
 if not reflex_google_recaptcha_v2.is_key_set():
     reflex_google_recaptcha_v2.set_site_key("6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI")
-    reflex_google_recaptcha_v2.set_secret_key("6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe")
+    reflex_google_recaptcha_v2.set_secret_key(
+        "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"
+    )
 
 
 class State(rx.State):
