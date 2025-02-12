@@ -5,9 +5,8 @@ from __future__ import annotations
 import datetime
 import secrets
 
-from sqlmodel import Column, DateTime, Field, func
-
 import reflex as rx
+from sqlmodel import Column, DateTime, Field, func
 
 from .. import constants
 from .record import MagicLinkAuthRecord

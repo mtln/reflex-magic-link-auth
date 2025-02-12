@@ -1,6 +1,8 @@
-import reflex as rx
+from typing import Any
 
+import reflex as rx
 import reflex_google_recaptcha_v2
+from reflex.utils.exec import is_prod_mode
 from reflex_magic_link_auth import MagicLinkAuthState, send_magic_link_mailgun
 
 # These are test keys
@@ -12,14 +14,15 @@ class State(rx.State):
     login_error: str = ""
 
     @rx.var(cache=True)
-    def is_prod_mode(self):
-        return rx.utils.exec.is_prod_mode()
+    def is_prod_mode(self) -> bool:
+        return is_prod_mode()
 
-    async def handle_submit_login(self, form_data):
+    @rx.event
+    async def handle_submit_login(self, form_data: dict[str, Any]):
         magic_link = await self.get_state(MagicLinkAuthState)
         self.login_error = ""
         record, otp = magic_link._generate_otp(form_data["email"])
-        if otp is None:
+        if otp is None or record is None:
             if record is not None:
                 self.login_error = "Too many attempts. Please try again later."
             else:
@@ -42,9 +45,9 @@ class State(rx.State):
                     magic_link._get_magic_link(record, otp),
                 )
             except Exception as e:
-                print(e)
+                print(e)  # noqa: T201
         else:
-            print(magic_link._get_magic_link(record, otp))
+            print(magic_link._get_magic_link(record, otp))  # noqa: T201
 
 
 def login_controls() -> rx.Component:

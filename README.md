@@ -39,7 +39,7 @@ This function returns a 2-tuple:
 * The one time password in plaintext
 
 If the record is None, then the email address was invalid, or some other problem
-occured (ensure database migration has been applied).
+occurred (ensure database migration has been applied).
 
 If the record is returned, but the OTP is None, then the user has exceeded the
 configured rate limit and cannot receive a new token for a while.
@@ -71,7 +71,7 @@ logged in and the session has not expired.
 
 A persistent external identifier hashed over the email address is provided at
 `reflex_magic_link_auth.MagicLinkAuthState.auth_session.persistent_id`. When interoperating
-with other user information systems, this ID can be used to uniquely identifer a user
+with other user information systems, this ID can be used to uniquely identify a user
 originating from reflex-magic-link-auth.
 
 ### 7. Logout

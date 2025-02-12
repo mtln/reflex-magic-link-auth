@@ -1,8 +1,7 @@
 import os
-import urllib
+import urllib.parse
 
 import httpx
-
 import reflex as rx
 
 config = rx.config.get_config()

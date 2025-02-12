@@ -5,10 +5,10 @@ from .providers import send_magic_link_mailgun
 from .state import MagicLinkAuthState
 
 __all__ = [
-    "constants",
     "MagicLinkAuthRecord",
     "MagicLinkAuthSession",
     "MagicLinkAuthState",
+    "constants",
     "magic_link_auth_page",
     "send_magic_link_mailgun",
 ]

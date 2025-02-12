@@ -6,9 +6,8 @@ import datetime
 import hashlib
 
 import bcrypt
-from sqlmodel import Column, DateTime, Field, func, Session, select
-
 import reflex as rx
+from sqlmodel import Column, DateTime, Field, Session, func, select
 
 
 class MagicLinkAuthRecord(rx.Model, table=True):
