@@ -7,6 +7,7 @@ on:
 env:
   EXTRA_ARGS: "--hostname ${{ vars.HOSTNAME }} --env MAILGUN_DOMAIN_NAME=${{ secrets.MAILGUN_DOMAIN_NAME }} --env MAILGUN_API_KEY=${{ secrets.MAILGUN_API_KEY }} --env RECAPTCHA_SITE_KEY=${{ secrets.RECAPTCHA_SITE_KEY }} --env RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}"
   RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY }}
+  RECAPTCHA_SECRET_KEY: ${{ secrets.RECAPTCHA_SECRET_KEY }}
 
 jobs:
   publish:
