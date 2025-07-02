@@ -140,7 +140,7 @@ class MagicLinkAuthState(MagicLinkBaseState):
                 expiration=(
                     datetime.datetime.now(datetime.timezone.utc) + expiration_delta
                 ),
-                client_ip=self._get_client_ip(),    
+                client_ip=self._get_client_ip(),
                 recent_attempts=recent_attempts + 1,
             )
             session.add(record)
